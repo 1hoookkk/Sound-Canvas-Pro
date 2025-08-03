@@ -1,0 +1,178 @@
+Reverse engineering the E‑mu Audity
+Historical context and goals
+E‑mu Systems began work on the Audity in the late 1970s. It was intended as the ultimate analogue synthesizer – a digital‑control “workstation” with a built‑in sequencer, patch memory and multi‑timbral control well before such concepts existed. The project was funded using royalty payments from Sequential Circuits (which licensed E‑mu’s digital keyboard‑scanning technology for the Prophet‑5). A prototype was demonstrated at the May 1980 AES show but the project was cancelled when Sequential stopped paying royalties and E‑mu pivoted to cheaper digital sampling (which became the Emulator). Only one Audity prototype was built and it now resides at the National Music Centre in Calgary
+synthark.org
+.
+
+Why reverse engineer it?
+Although the Audity was never commercially produced, it is historically important. Re‑creating the instrument in hardware or software would help musicians understand late‑1970s analogue design and could lead to modern recreations of its distinctive sound. However, the Audity used proprietary E‑mu hardware (SSM chips, Z‑80 control code and custom voice cards). The following notes summarise publicly available information about the architecture and suggest high‑level approaches to replication. This report does not include proprietary schematics or copyrighted firmware, and any reproduction must respect intellectual‑property law.
+
+Architecture overview
+Overall system
+Voice cards and expansion – The Audity consisted of a system CPU with dual 8‑inch floppy drives, a large blue case containing up to 16 voice cards and a programmable console (control panel) with a 5‑octave keyboard
+synthark.org
+. The system could be expanded to 64 voices
+soundonsound.com
+. Each voice card was a complete dual‑voice synthesizer based on SSM (Solid State Music) chips
+synthark.org
+. The CPU was controlled by Z‑80 microprocessors that loaded operating software from disk and managed patch memory and the sequencer
+synthark.org
+.
+
+Programmable console – The front panel had around 45 rotary encoders and 110 buttons plus a 40‑character alphanumeric display
+soundonsound.com
+. Users could create and store Single Voice Sounds, then assemble them into “System Presets” (orchestrations) that mapped up to 16 different voices to separate channels; 12 orchestrations were instantly accessible
+synthark.org
+. Data and patches were stored on two of the 8‑inch floppy drives, while the third drive stored sequences
+synthark.org
+.
+
+Keyboard and sequencer – A polyphonic 4060 keyboard provided control with programmable splits, channel assignment and transposition; an optional 4070 floppy subsystem stored sequences
+synthark.org
+. The keyboard contained a 16‑channel digital memory sequencer capable of recording ~6 000 notes, with sequences saved to floppy (six sequences per disk)
+synthark.org
+. This integrated sequencer made the Audity an early workstation synthesizer
+soundonsound.com
+.
+
+Voice architecture
+E‑mu’s SSM series chips were at the heart of the Audity’s voices. The same chips later appeared in the Prophet‑5 and other polyphonic synthesizers
+synthark.org
+. Each voice card contained two complete voices; each voice had the following analog building blocks:
+
+Component	Details
+Oscillators	Two multi‑waveform VCOs based on the SSM2030 chip provided simultaneous triangle, square and sawtooth waveforms, with pulse‑width modulation and hard sync
+synthark.org
+. A variable‑spectral noise source (white, pink and mauve) offered additional timbres
+synthark.org
+.
+Filters	Three filters per voice: a 24 dB/octave high‑pass and 24 dB/octave low‑pass filter based on the SSM2040, plus a multimode resonant filter after the VCA
+synthark.org
+.
+Amplifier	A voltage‑controlled amplifier (VCA) with both linear and exponential response using the SSM2020 dual‑VCA chip
+synthark.org
+.
+Envelopes	Four ADSR envelopes with an initial delay, assigned to each VCO, both filters and the VCA. Envelopes used the SSM2050 transient generator chip
+synthark.org
+.
+LFO	A resettable LFO offering square, triangle, positive and negative ramp waveforms
+synthark.org
+.
+Mixers and modulation buses	Two signal mixers and four independent modulation buses (one with delay) allowed complex routing between the oscillators, filters, VCA and LFO
+synthark.org
+.
+
+These voice features were “moderately complex” compared with contemporaries like the Prophet‑5 and Jupiter‑8
+soundonsound.com
+ and far exceeded them in multi‑timbral capability
+synthark.org
+.
+
+SSM chips and their role
+The SSM chips in the Audity comprised:
+
+SSM2020 (dual VCA) – used in the Audity and earlier Blue Box voice cards
+synthark.org
+.
+
+SSM2030 (VCO) – provided the voice and LFO oscillators
+synthark.org
+.
+
+SSM2040 (voltage‑controlled filter) – served as the high‑pass/low‑pass filters
+synthark.org
+.
+
+SSM2050 (transient generator) – implemented the ADSR envelopes
+synthark.org
+.
+
+These chips allowed large polyphonic systems because multiple voices could be built on identical cards, ensuring consistent tuning and sound across voices
+synthark.org
+.
+
+High‑level approach to reverse engineering
+Re‑creating the Audity today involves reconstructing both the analogue voice cards and the digital control architecture. The following steps outline a high‑level approach that respects intellectual property and recognises practical challenges.
+
+1. Collect available documentation and measurements
+Study archived information – The Emulator Archive provides descriptions of the voice architecture, system layout and photographs of the Audity
+synthark.org
+soundonsound.com
+. Use these descriptions, along with any publicly available photos and interviews, to understand the placement of controls, connectors and hardware.
+
+Research SSM chip datasheets – Since the voice cards relied on SSM2020, SSM2030, SSM2040 and SSM2050 chips, obtain datasheets and application notes for these chips. The SSM voice card documentation shows how E‑mu combined these chips into a 6 × 6.5 inch board with two VCOs, one VCF, two VCAs and two ADSR envelopes
+synthark.org
+.
+
+Inspect the surviving prototype – If access is possible, analysing the physical prototype in the National Music Centre could yield measurements of circuit traces, backplane connectors and mechanical layout. Photos show that each voice card plugs into a backplane in the blue cabinet
+synthark.org
+.
+
+Review firmware – The Z‑80 operating software controlled patch memory, sequencing and voice allocation. At least three CPUs (one for the keyboard/sequencer, one for the console and one for the voice backplane) were used. Reverse engineering would require disassembling ROM dumps (if available) or writing new firmware that implements similar functionality on modern microcontrollers. No public ROM images are known to exist, so any firmware recreation would need to be original work.
+
+2. Recreate the analogue voice cards
+Choose replacement chips – Original SSM chips are long out of production and expensive to obtain
+synthark.org
+. Modern replacements exist – e.g., SSI2140/SSI2144 filters are descendants of the SSM2040, and the SSI2130 VCO can emulate the SSM2030. Designers might also use discrete circuits that mimic the SSM designs (several modular‑synth builders have replicated the SSM2040 filter in discrete transistors
+synthark.org
+). Dual VCA and envelope generator functions can be built using modern VCAs (e.g., THAT2180) and microcontroller‑controlled envelope generators.
+
+Design a voice card PCB – Follow the architecture shown in the Emulator Archive: two VCOs with PWM/hard sync, a noise source, high‑pass and low‑pass filters plus a post‑VCA multimode resonant filter, four ADSR envelopes and an LFO
+synthark.org
+. Use modular sections for each subsystem. Provide a backplane connector (e.g., Eurorack or custom) that supplies power and digital control lines.
+
+Implement modulation buses – The Audity offered four modulation buses with delay; modern replicas could implement routing using analogue switches or digital control matrices, controlled via CV/gate or microcontroller instructions.
+
+Ensure accurate tracking – Use high‑precision components and temperature compensation for VCOs and filters to maintain tuning stability across many voices. The original Audity used identical SSM chips per voice to keep sound uniform
+synthark.org
+.
+
+3. Build the digital control subsystem
+Processor platform – Select a modern microcontroller (e.g., ARM Cortex or ESP32) or small single‑board computer (e.g., Raspberry Pi) to replace the Z‑80 host. The control system must handle voice allocation, patch parameter storage, sequencer functions and user interface.
+
+Interface design – Reproduce the tactile experience of the Audity’s control panel by using encoders, buttons and displays. A 40‑character OLED or LCD display can emulate the original luminescent display
+soundonsound.com
+. Digital encoders and momentary switches can substitute for the original 45 encoders and 110 buttons; however, a simplified interface may be more practical.
+
+Storage – Modern solid‑state storage can emulate floppy drives while retaining compatibility with the Audity’s workflow. For example, use an SD‑card to store operating software, patches and sequences. Emulate the multi‑drive concept by maintaining separate directories for system software, voice presets and sequencer data. Consider the ability to import/export data in modern formats (MIDI SysEx or sample files).
+
+Keyboard and sequencer – A MIDI or USB keyboard controller can replace the original 4060. Implement a 16‑track sequencer in firmware, allowing multi‑channel recording and playback similar to the Audity’s 6 000‑note capacity
+synthark.org
+. Provide tempo, quantisation and step‑editing features. Support keyboard splits and channel assignment.
+
+Communication with voice cards – Each voice card will need digital control lines for parameters. Use a serial or parallel interface (e.g., SPI or I²C) to send control voltages to DACs on the voice cards. Because the original Audity allowed each voice to have unique settings (multi‑timbrality), the control protocol must support addressing individual voices and storing per‑voice parameter sets.
+
+4. Software/virtual re‑creation
+If hardware recreation is impractical, a software emulation can capture the Audity’s architecture without needing rare components. Building a virtual instrument in software (e.g., as a VST/AU plugin) allows accurate modelling of the oscillators, filters, VCAs and envelopes using digital signal processing (DSP). The multi‑timbral architecture and sequencer can be reproduced in software with far more storage capacity. To approximate the SSM chips’ sound, digital models of the SSM2040 filter and SSM2030 VCO can be implemented using filter design papers and circuit modelling techniques.
+
+5. Legal and ethical considerations
+The Audity prototype is a unique, historically significant instrument. Any reverse‑engineering effort should respect copyright and trade secrets. Schematics, firmware and design documents may still be protected intellectual property of E‑mu (or its successors) even if the product was never marketed. The Emulator Archive explicitly requests that text and photos not be copied without permission
+synthark.org
+. Therefore:
+
+Use publicly available information (datasheets, interviews, archival articles) rather than proprietary schematics.
+
+Create original schematics and firmware rather than duplicating E‑mu’s designs.
+
+Acknowledge E‑mu Systems and SSM/SSI designers when publishing a recreation.
+
+When possible, collaborate with institutions like the National Music Centre or the Audities Foundation, which may hold rights and can provide guidance.
+
+Conclusion
+The E‑mu Audity was a visionary attempt to build a fully programmable, multi‑voice analogue workstation. Its architecture combined dual‑VCO voices, high‑/low‑pass and resonant filters, four envelopes and extensive modulation
+synthark.org
+ with Z‑80‑based digital control and floppy‑disk storage
+synthark.org
+. Only one prototype was made, but its influence is evident in later E‑mu instruments and in the wider concept of the keyboard workstation. Reverse‑engineering the Audity is challenging but feasible at a high level: modern SSI chips can replace the obsolete SSM chips, and contemporary microcontrollers can emulate the Z‑80 control system. By following the design principles described above and respecting the original creators’ intellectual property, engineers and musicians can explore the Audity’s unique synthesis approach while honouring its legacy.
+
+
+
+In summary, the report explains that the E‑mu Audity was a prototype 16-voice analogue workstation developed in 1979–80. It combined dual-VCO voices based on SSM chips, multi-mode filtering, four envelopes and extensive modulation with Z‑80-driven digital control and floppy-disk storage
+synthark.org
+. Only a single prototype was built, and the project was cancelled due to its high cost and the withdrawal of royalty funding from Sequential Circuits
+soundonsound.com
+. Reverse-engineering must therefore rely on archived descriptions and modern substitutes for obsolete components.
+
+I also note that the report outlines a high-level approach to reverse engineering. It suggests studying available photos and chip datasheets, selecting modern SSI equivalents for the original SSM chips, designing new voice-card PCBs, and using contemporary microcontrollers to replicate the original multi-timbral sequencer and control system
+synthark.org
+. It stresses that any replica should respect intellectual property rights and be an original work rather than a direct copy of E‑mu’s designs.
